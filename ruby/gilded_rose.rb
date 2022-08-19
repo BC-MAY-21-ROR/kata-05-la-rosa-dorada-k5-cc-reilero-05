@@ -24,19 +24,21 @@ class GildedRose
   def method_test2(item)
     item.quality = item.quality + 1
       if item.name == "Backstage passes to a TAFKAL80ETC concert"
-        if item.sell_in < 11
-          item.quality = item.quality + 1 if quality_under_50?(item)
-        end
-        if item.sell_in < 6
-          item.quality = item.quality + 1 if quality_under_50?(item)
-        end
+        # verifica que el sell_in sea menor a 11 y 6 para luego verificar la calidad del item
+        sell_in_under_to?(item, 11) ? (item.quality = item.quality + 1 if quality_under_50?(item) ) : nil
+        sell_in_under_to?(item, 6) ? (item.quality = item.quality + 1 if quality_under_50?(item) ) : nil
       end
   end
 
+  # quality_under_50? verifica que la calidad sea menor a 50
   def quality_under_50?(item)
     item.quality < 50
   end
 
+  # sell_in_under_to? verifica que sell_in sea menor a sell_in de condición
+  def sell_in_under_to?(item, sell_in)
+    item.sell_in < sell_in
+  end
 
   def update_quality()
     @items.each do |item|
@@ -49,8 +51,7 @@ class GildedRose
       if item.name != "Sulfuras, Hand of Ragnaros"
         item.sell_in = item.sell_in - 1
       end
-
-      if item.sell_in < 0
+      sell_in_under_to?(item,0) ?
         if item.name != "Aged Brie"
           if item.name != "Backstage passes to a TAFKAL80ETC concert"
             if item.quality > 0
@@ -64,7 +65,7 @@ class GildedRose
         else
           item.quality = item.quality + 1 if quality_under_50?(item)
         end
-      end
+      : nil
     end
   end
 end
