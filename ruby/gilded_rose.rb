@@ -1,122 +1,112 @@
+# frozen_string_literal: true
+
+# Main logic class
 class GildedRose
+  # ----- Rules -----
+  #
+  #   - All items have a SellIn value which denotes the number of days we have to sell the item
+  #   - all items have a quality value which denotes how valuable the item is
+  #   - At the end of each day our system lowers both values for every item
+  #
+  #   Pretty simple, right? Well this is where it gets interesting:
+  #
+  #   - Once the sell by date has passed, Quality degrades twice as fast
+  #   - The Quality of an item is never negative
+  #   - "Aged Brie" actually increases in Quality the older it gets
+  #   - The Quality of an item is never more than 50
+  #   - "Sulfuras", being a legendary item, never has to be sold or decreases in Quality
+  #   - "Backstage passes", like aged brie, increases in Quality as its SellIn value approaches;
+  #   Quality increases by 2 when there are 10 days or less and by 3 when there are 5 days or less but
+  #   Quality drops to 0 after the concert
+  #
+  # We have recently signed a supplier of conjured items. This requires an update to our system:
+  #
+  #   - "Conjured" items degrade in Quality twice as fast as normal items
+
   def initialize(items)
     @items = items
   end
 
-  # - All items have a SellIn value which denotes the number of days we have to sell the item
-  # - All items have a Quality value which denotes how valuable the item is
-  # - At the end of each day our system lowers both values for every item
+  # ----- Objects types -----
 
-  # - Once the sell by date has passed, Quality degrades twice as fast
-  # - The Quality of an item is never negative
-  # - "Aged Brie" actually increases in Quality the older it gets
-  # - The Quality of an item is never more than 50
-  # - "Sulfuras", being a legendary item, never has to be sold or decreases in Quality
-  # - "Backstage passes", like aged brie, increases in Quality as its SellIn value approaches;
-  # Quality increases by 2 when there are 10 days or less and by 3 when there are 5 days or less but
-  # Quality drops to 0 after the concert
-
-  # method_test1 se asegura de bajar la calidad de los items que no sean el item sulfuras
-  def lower_normal_item_quality(item) # ✅
-    item.quality -= 1 if quality_item_50_0(item, 0) && different_to_sulfuras?(item.name) && !conjured_item?(item)
+  def aged_brie?(item)
+    item.name == 'Aged Brie'
   end
 
-  # different_to_sulfuras? verifica que el item no sea sulfuras
-  def different_to_sulfuras?(name) # ✅
-    name != 'Sulfuras, Hand of Ragnaros'
+  def backstage?(item)
+    item.name == 'Backstage passes to a TAFKAL80ETC concert'
   end
 
-  # quality_under_50? verifica que la calidad sea menor a 50
-  def quality_item_50_0(item, _param) # ✅
-    return item.quality < 50 if _param == 50
-
-    item.quality > 0 if _param == 0
+  def sulfuras?(item)
+    item.name == 'Sulfuras, Hand of Ragnaros'
   end
 
-  # backstage_passes_quality se asegura de subir la calidad de los pases a backstage acorde a las condiciones
-  def backstage_passes_quality(item) # ✅
-    item.quality += 1
-    if item.name == 'Backstage passes to a TAFKAL80ETC concert'
-      # verifica que el sell_in sea menor a 11 y 6 para luego verificar la calidad del item
-      sell_in_under_to?(item, 11) ? (item.quality += 1 if quality_item_50_0(item, 50)) : nil
-      sell_in_under_to?(item, 6) ? (item.quality +=  1 if quality_item_50_0(item, 50)) : nil
-    end
-  end
-
-  # sell_in_under_to? verifica que sell_in sea menor a sell_in de condición
-  def sell_in_under_to?(item, sell_in) # ✅
-    item.sell_in < sell_in
-  end
-
-  # revisa que el item no sea Aged Brie
-  def different_aged_brie?(item)# ✅
-    item != 'Aged Brie'
-  end
-
-  # not_aged_brie_sellin_0 compara que no sea Aged Brie o suma calidad en caso contrario
-  def not_aged_brie_sellin_0(item) # ✅
-    if different_aged_brie?(item.name)
-      update_quality_not_backstage_sulfuras(item)
-    elsif quality_item_50_0(item, 50)
-      item.quality += 1
-    end
-  end
-
-  # los item que sean sulfuras y cumpla las condiciones de los metodos anteriores, le reduce la calidad en 1
-  def update_quality_not_backstage_sulfuras(item) # ✅
-    if item.name != 'Backstage passes to a TAFKAL80ETC concert'
-      quality_item_50_0(item, 0) ? item_lower_quality_not_sulfuras(item) : nil
-    else
-      item.quality -= item.quality
-    end
-  end
-
-  # reduce la calidad en 1 si cumple las condiciones anteriores al metodo y
-  def item_lower_quality_not_sulfuras(item) # ✅
-    item.quality -= 1 if different_to_sulfuras?(item.name)
-  end
-
-  # verifica que los items se mantengan debajo de 50 en calidad y encima de 0
-  def item_quality_under_50_above_0(item) # ✅
-    if different_aged_brie?(item.name) && !conjured_item?(item) && item.name != 'Backstage passes to a TAFKAL80ETC concert'
-      lower_normal_item_quality(item)
-    elsif quality_item_50_0(item, 50)
-      backstage_passes_quality(item)
-    end
-  end
-
-  # verifica que los items que no sean "sulfuras" reduzcan su fecha de sell-in en 1
-  def not_sulfuras(item) # ✅
-    item.sell_in -= 1 if different_to_sulfuras?(item.name)
-  end
-
-  # verifican que si un item tiene su fecha de sell_in debajo de 0 se actualice su calidad acorde a qué tipo de item es
-  def sell_in_above_0(item) # ✅
-    not_aged_brie_sellin_0(item) if sell_in_under_to?(item, 0)
+  def normal_item?(item)
+    !aged_brie?(item) && !backstage?(item) && !sulfuras?(item) && !conjured_item?(item)
   end
 
   def conjured_item?(item)
     item.name.include?('Conjured')
   end
 
-  # 
-  def conjured_quality(item) 
-    if conjured_item?(item)
-      item.quality -= 2 if item.quality > 0
-    end
+  # ----- quality above 0 and quality below-equal 50 -----
+
+  def quality_above_0?(item)
+    item.quality.positive? # item > 0
   end
 
-  # update_quality actualiza la calidad para los items registrados
-  def update_quality # ✅
+  def quality_under_equal50?(item)
+    item.quality <= 50
+  end
+
+  # ----- Manage objects quality -----
+
+  def normal_item_manage_quality(item)
+    return if item.quality.zero?
+    return item.quality -= 2 if item.sell_in <= 0
+
+    item.quality -= 1
+  end
+
+  def backstage_manage_quality(item)
+    return item.quality = 0 if item.sell_in <= 0
+    return if item.quality == 50
+    return item.quality += 3 if item.sell_in <= 5 && item.quality != 49
+    return item.quality += 2 if item.sell_in <= 10 && item.quality != 49
+
+    item.quality += 1
+  end
+
+  def aged_brie_manage_quality(item)
+    return item.quality += 2 if item.sell_in <= 0
+
+    item.quality += 1
+  end
+
+  def conjured_manage_quality(item)
+    return item.quality = 0 if item.sell_in <= 0
+
+    item.quality -= 2
+  end
+
+  # ----- "Main methods" -----
+
+  def update_quality_per_objects(item)
+    normal_item_manage_quality(item) if quality_above_0?(item) && normal_item?(item) # ✅
+    backstage_manage_quality(item) if quality_under_equal50?(item) && backstage?(item) # ✅
+    aged_brie_manage_quality(item) if quality_under_equal50?(item) && aged_brie?(item) # ✅
+    conjured_manage_quality(item) if conjured_item?(item) # ✅
+  end
+
+  def update_quality
     @items.each do |item|
-      conjured_quality(item)
-      item_quality_under_50_above_0(item)# condition1
-      not_sulfuras(item)# condition2
-      sell_in_above_0(item)# condition3
+      update_quality_per_objects(item)
+      item.sell_in -= 1 unless sulfuras?(item)
     end
   end
 end
 
+# Class Item to create items
 class Item
   attr_accessor :name, :sell_in, :quality
 
