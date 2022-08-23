@@ -18,7 +18,7 @@ class GildedRose
 
   # method_test1 se asegura de bajar la calidad de los items que no sean el item sulfuras
   def lower_normal_item_quality(item) # ✅
-    item.quality -= 1 if quality_item_50_0(item, 0) && different_to_sulfuras?(item.name)
+    item.quality -= 1 if quality_item_50_0(item, 0) && different_to_sulfuras?(item.name) && !conjured_item?(item)
   end
 
   # different_to_sulfuras? verifica que el item no sea sulfuras
@@ -78,7 +78,7 @@ class GildedRose
 
   # verifica que los items se mantengan debajo de 50 en calidad y encima de 0
   def item_quality_under_50_above_0(item) # ✅
-    if different_aged_brie?(item.name) && item.name != 'Backstage passes to a TAFKAL80ETC concert'
+    if different_aged_brie?(item.name) && !conjured_item?(item) && item.name != 'Backstage passes to a TAFKAL80ETC concert'
       lower_normal_item_quality(item)
     elsif quality_item_50_0(item, 50)
       backstage_passes_quality(item)
@@ -95,12 +95,24 @@ class GildedRose
     not_aged_brie_sellin_0(item) if sell_in_under_to?(item, 0)
   end
 
+  def conjured_item?(item)
+    item.name.include?('Conjured')
+  end
+
+  # 
+  def conjured_quality(item) 
+    if conjured_item?(item)
+      item.quality -= 2 if item.quality > 0
+    end
+  end
+
   # update_quality actualiza la calidad para los items registrados
   def update_quality # ✅
     @items.each do |item|
-      item_quality_under_50_above_0(item)# condicion1
+      conjured_quality(item)
+      item_quality_under_50_above_0(item)# condition1
       not_sulfuras(item)# condition2
-      sell_in_above_0(item)# condition
+      sell_in_above_0(item)# condition3
     end
   end
 end
